@@ -16,13 +16,17 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
-from todo import views
-
+from django.contrib.auth import views as auth_views
+from todo.views import todo_form, signup, ToDoListView
+from django.contrib.auth.decorators import login_required
+from django.views.generic.base import RedirectView
 
 urlpatterns = [
-
-	path('', views.index, name="todo"),
-	#path('del/<str:item_id>', views.remove, name="del"),
-	
-	path('admin/', admin.site.urls),
+    path('', auth_views.LoginView.as_view(template_name='login.html'), name='login'), 
+    path('accounts/profile/', RedirectView.as_view(pattern_name='todo_list', permanent=False)), # Root URL mapped to login view
+    path('todo_list/', login_required(ToDoListView.as_view()), name='todo_list'),
+    path('todo_form/', login_required(todo_form), name='todo_form'),
+    path('signup/', signup, name='signup'),
+    path('admin/', admin.site.urls),
 ]
+

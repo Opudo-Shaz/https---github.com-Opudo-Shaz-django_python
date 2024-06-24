@@ -1,26 +1,54 @@
 from django.shortcuts import render, redirect
-from django.contrib import messages
-
+from django.views.generic import ListView
+from django.contrib.auth import login, authenticate
+from django.contrib.auth.forms import AuthenticationForm
+from django.contrib.auth.decorators import login_required
+from .forms import SignUpForm
 from .forms import TodoForm
 from .models import Todo
 
-
-def index(request):
-
-    if request.method == "POST":
+def todo_form(request):
+    if request.method == 'POST':
         form = TodoForm(request.POST)
         if form.is_valid():
             form.save()
-            messages.success(request, "Todo item added successfully")
-            return redirect('todo:index')  # Assuming the URL name for the index view is 'index' under the namespace 'todo'
+            return redirect('todo_list')
     else:
         form = TodoForm()
-    i = Todo.objects.all().values()
+    return render(request, 'todo_form.html', {'form': form})
 
+class ToDoListView(ListView):
+    model = Todo
+    template_name = 'todo_list.html'
+    context_object_name = 'todos'
+   
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['add_todo_url'] = 'todo_form'  # URL to redirect to the todo_form
+        return context
+    
 
-    context = {
-        "form": form,
-        "item_list": i,
-        "title": "TODO LIST",
-    }
-    return render(request, 'todo/index.html')
+def signup(request):
+    if request.method == 'POST':
+        form = SignUpForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+            login(request, user)
+            return redirect('todo_list')
+    else:
+        form = SignUpForm()
+    return render(request, 'signup.html', {'form': form})
+
+def login_view(request):
+    if request.method == 'POST':
+        form = AuthenticationForm(request, data=request.POST)
+        if form.is_valid():
+            username = form.cleaned_data.get('username')
+            password = form.cleaned_data.get('password')
+            user = authenticate(request, username=username, password=password)
+            if user is not None:
+                login(request, user)
+                return redirect('todo_list')
+    else:
+        form = AuthenticationForm()
+    return render(request, 'login.html', {'form': form})
